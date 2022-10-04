@@ -11,9 +11,9 @@ extern "C" {
 
 
 
-    int open_log(const char* filepath, bool overwrite=false);
-    int write_to_log(const char* log_str, unsigned int len);
-    int close_log();
+int open_log(const char* filepath, bool overwrite=false);
+int write_to_log(const char* log_str, unsigned int len);
+int close_log();
 
 
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 #include <string>
 
-namespace Logger {
+namespace Spider::Logger {
 
 
 // X-Macro
