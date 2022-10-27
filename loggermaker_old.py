@@ -1,7 +1,6 @@
 #! /usr/bin/python3
 
 import argparse
-from asyncio.log import logger
 from typing import List
 
 
@@ -35,8 +34,9 @@ def start_header_guard(filename: str) -> str:
 
 def create_levels(levels: StrList) -> str:
     # The trailing spaces are important
-    level_list = [f'    LOGLVL({level})' for level in levels]
-    return ' \\\n'.join(level_list)
+    level_list = [f'\ \n  LOGLVL({level}) ' for level in levels]
+    level_list.insert(0, '#define LOGLVLS ') 
+    return ''.join(level_list)
 
 
 def create_enum() -> str:
@@ -122,6 +122,7 @@ def define_base_log_function_cpp(log_options: StrList, throw_on_error: bool = Tr
     else:
         pass
         
+        
     log_function_list.append('}') 
     
     return '\n'.join(log_function_list)
@@ -164,13 +165,28 @@ if __name__ == '__main__':
     logger_options = ['filename', 'linenumber'] # TODO: Support time
     default_level = levels[0]
 
-    # CPP Header testing
-    with open('raw_files/logger_pre.hpp') as cpp_logger_pre:
-        cpp_logger_header = cpp_logger_pre.read()
+    # CPP header for testing
+    cpp_header_output_list = [
+        start_header_guard(filename),
+        create_header_includes_cpp(),
+        create_levels(levels),
+        create_enum(),
+        create_base_functions_cpp(),
+        create_specific_functions_cpp(),
+        end_header_guard(filename),
+    ]
+    cpp_header_output = '\n\n'.join(cpp_header_output_list)
 
-    cpp_logger_header = cpp_logger_header.replace('FILENAME_UPPER_REPLACE', filename.upper())
-    cpp_logger_header = cpp_logger_header.replace('LOGLVLS_REPLACE', create_levels(levels))
-    
+    # CPP source for testing
+    cpp_source_output_list = [
+        create_includes_cpp(filename),
+        create_levels_container_cpp(default_level),
+        define_base_log_function_cpp(logger_options),
+        define_specific_functions_cpp(),
+        define_level_set_n_get(),
+    ]
+    cpp_source_output = '\n\n'.join(cpp_source_output_list)
 
     # produce output
-    print(f'{cpp_logger_header}\n\n')
+    print(f'{cpp_header_output}\n\n')
+    print(f'{cpp_source_output}\n\n')
