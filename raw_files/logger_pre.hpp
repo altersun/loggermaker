@@ -27,5 +27,4 @@ Level GetLevel();
     LOGLVLS
 #undef LOGLVL
 
-
 #endif // FILENAME_UPPER_REPLACE_H

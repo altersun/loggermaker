@@ -2,6 +2,8 @@
 
 import argparse
 from asyncio.log import logger
+import os
+import sys
 from typing import List
 
 
@@ -37,21 +39,6 @@ def create_levels(levels: StrList) -> str:
     # The trailing spaces are important
     level_list = [f'    LOGLVL({level})' for level in levels]
     return ' \\\n'.join(level_list)
-
-
-def create_enum() -> str:
-    level_enum_list = [
-        '#define LOGLVL(log_level) log_level,',
-        'enum LogLevel {',
-        '    LOGLVLS',
-        '};',
-        '#undef LOGLVL'
-    ]
-    return '\n'.join(level_enum_list)
-
-
-def end_header_guard(filename: str) -> str:
-    return f'#endif // {filename.upper()}_H'
 
 
 def create_header_includes_cpp() -> str:
@@ -155,14 +142,34 @@ def define_level_set_n_get() -> str:
 
 if __name__ == '__main__':
 
-    #parser = argparse.ArgumentParser(description='Logger settings')
-    #parser.add_argument()
+    parser = argparse.ArgumentParser(description='Logger settings')
+    parser.add_argument('-f', '--config_file', help='Config file which includes settings')
+    parser.add_argument('-i', '--inner_namespace', help='Innada;djhad', default='')
+    parser.add_argument('-o', '--outer_namespace', default='')
+    parser.add_argument('-c', '--clean', default=False, help='Delete generated files')
+    # The goal of inner & outer namespaces (IN and ON) is for C++ namespacing
+    # It affects the simplified logging functions
+    # So if IN has a value and ON does not, all functions will be <IN>::<function>
+    # And if ON has a value and ON does not, all functions will be <ON>::<function> EXCEPT Log_<level> which will have no namespace
+    # And if ON and IN have value, it will be <IN>::Log_<level> and <ON>::<IN>::<all_other_functions>
 
-    # TODO: These should be arguments
+
+
+    # TODO: These should be arguments or config entries
     filename = 'loggie' 
     levels = ['no_biggie', 'im_worried', 'OH_SNAP']
     logger_options = ['filename', 'linenumber'] # TODO: Support time
     default_level = levels[0]
+ 
+    # Create ouput directory if necessary
+    try:
+        os.mkdir('./output')
+    except FileExistsError:
+        pass
+    except Exception as e:
+        print(f'Cannot create output directory: {e}')
+        sys.exit(-1)
+
 
     # CPP Header testing
     with open('raw_files/logger_pre.hpp') as cpp_logger_pre:
@@ -171,6 +178,9 @@ if __name__ == '__main__':
     cpp_logger_header = cpp_logger_header.replace('FILENAME_UPPER_REPLACE', filename.upper())
     cpp_logger_header = cpp_logger_header.replace('LOGLVLS_REPLACE', create_levels(levels))
     
+    
 
     # produce output
     print(f'{cpp_logger_header}\n\n')
+    with open(f'./output/{filename}.hpp', 'w') as cpp_logger_header_post:
+        cpp_logger_header_post.write(cpp_logger_header)
