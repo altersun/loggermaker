@@ -127,7 +127,9 @@ if __name__ == '__main__':
     logger_options = ['filename', 'linenumber'] # TODO: Support time
     default_level = levels[0]
     namespace = 'Inner'
-    outer_namespace = ''# 'Outer'
+    outer_namespace = 'Outer'
+    logfile_default = './logfile.log'
+    log_overwrite_default = False
  
     # Create ouput directory if necessary
     for output_dir in ('include', 'source'):
@@ -154,10 +156,19 @@ if __name__ == '__main__':
         cpp_logger_header = cpp_logger_header_pre.read()
     cpp_logger_header = cpp_logger_header.replace('FILENAME_UPPER_REPLACE', filename.upper())
     cpp_logger_header = cpp_logger_header.replace('LOGLVLS_REPLACE', create_levels(levels))
-    cpp_logger_header = cpp_logger_header.replace('NAMESPACE_START_REPLACE', 'namespace %s {'%(total_namespace))
-    cpp_logger_header = cpp_logger_header.replace('NAMESPACE_END_REPLACE', '} // end namespace %s'%(total_namespace))
-    cpp_logger_header = cpp_logger_header.replace('NAMESPACE_OUTER_START_REPLACE', 'namespace %s {'%(outer_namespace))
-    cpp_logger_header = cpp_logger_header.replace('NAMESPACE_OUTER_END_REPLACE', '} // end namespace %s'%(outer_namespace))
+    if total_namespace:
+        cpp_logger_header = cpp_logger_header.replace('NAMESPACE_START_REPLACE', 'namespace %s {'%(total_namespace))
+        cpp_logger_header = cpp_logger_header.replace('NAMESPACE_END_REPLACE', '} // end namespace %s'%(total_namespace))
+    else:
+        cpp_logger_header = cpp_logger_header.replace('NAMESPACE_START_REPLACE', '')
+        cpp_logger_header = cpp_logger_header.replace('NAMESPACE_END_REPLACE', '')
+    if outer_namespace:
+        cpp_logger_header = cpp_logger_header.replace('NAMESPACE_OUTER_START_REPLACE', 'namespace %s {'%(outer_namespace))
+        cpp_logger_header = cpp_logger_header.replace('NAMESPACE_OUTER_END_REPLACE', '} // end namespace %s'%(outer_namespace))
+    else:
+        cpp_logger_header = cpp_logger_header.replace('NAMESPACE_OUTER_START_REPLACE', '')
+        cpp_logger_header = cpp_logger_header.replace('NAMESPACE_OUTER_END_REPLACE', '')
+
 
     # produce output cpp header
     print(f'{cpp_logger_header}\n\n')
@@ -170,6 +181,8 @@ if __name__ == '__main__':
     cpp_logger_source = cpp_logger_source.replace('FILENAME_REPLACE', filename)
     cpp_logger_source = cpp_logger_source.replace('OUTER_NAMESPACE_REPLACE', f'{outer_namespace}::' if outer_namespace else '')
     cpp_logger_source = cpp_logger_source.replace('SCOPING_NS_REPLACE', scoping_namespacer)
+    cpp_logger_source = cpp_logger_source.replace('SCOPING_NS_REPLACE', str(log_overwrite_default).lower())
+    cpp_logger_source = cpp_logger_source.replace('LOGFILE_REPLACE', logfile_default)
 
     # produce output cpp header
     print(f'{cpp_logger_source}\n\n')

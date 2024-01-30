@@ -12,6 +12,7 @@ extern "C" {
 
 
 int open_log(const char* filepath, bool overwrite=false);
+bool is_log_open();
 int write_to_log(const char* log_str, unsigned int len);
 int close_log();
 

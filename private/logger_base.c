@@ -1,5 +1,7 @@
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/stat.h> 
 
 #include "logger_base.h"
@@ -9,62 +11,79 @@
 #define MAX_LOG_FILE_NAME_LEN 512
 #endif
 
-#define LOG_FD_CLOSED -100
+// Set buffer size and behavior that can be adjusted in Make
+#ifndef BUFFER_SIZE
+#define BUFFER_SIZE 256
+#endif
+#ifndef BUFFER_FLUSH_BEHAVIOR
+#define BUFFER_FLUSH_BEHAVIOR _IOLBF // Line buffer by default. Choices are Full Buffering (_IOFBF) or No Buffering (_IONBF).
+#endif
 
-static char s_log_file_name[MAX_LOG_FILE_NAME_LEN] = {0};
-static bool s_log_open = false;
-static int s_fd = 0;
+// Log file pointer
+static FILE* s_fp = NULL;
+
+// Buffer for log messages. No need to initialize.
+static char s_buffer[BUFFER_SIZE];
+
+
+bool is_log_open()
+{
+    return s_fp != NULL;
+}
 
 
 int open_log(const char* filepath, bool overwrite)
 {
-    if (s_log_open) {
-        // Don't reopen, just skip
-        return 0;
+    // Can't open if we're already open!  
+    if (is_log_open()) {
+        return -1;
     }
-    
-    // Common permissions, write only, and create if not there
-    int mode = S_IWUSR | S_IWGRP | S_IWOTH;
-    int flags = O_WRONLY | O_CREAT;
-    if (overwrite) {
-        flags |= O_TRUNC; // Truncate; overwrite existing contents
-    } else {
-        flags |= O_APPEND; // Append to existing contents
-    }
-    
-    int open_ret = open(filepath, flags, mode);
-    if (open_ret < 0) {
-        // TODO: Cleaner error reporting
-        return open_ret;
-    }
-    s_fd = open_ret;
 
-    int lock_ret = lockf(s_fd, F_TLOCK, 0);
-    if (lock_ret != 0) {
-        // TODO: Cleaner error reporting
-        return lock_ret; // Maybe errno too?
+    if (overwrite) {
+        s_fp = (filepath, "w");
+    } else {
+        s_fp = (filepath, "a");
     }
-    s_log_open = true;
+    if (s_fp == NULL) {
+        perror("Could not open log file");
+        return -1;
+    }
+
+    // Try to set buffer size and behavior
+    setbuf(s_fp, s_buffer);
+    if (0 != setvbuf(s_fp, s_buffer, BUFFER_FLUSH_BEHAVIOR, BUFFER_SIZE)) {
+        close_log(s_fp);
+        return -1;
+    }
+
     return 0;
 }
+    
 
-
-int close_log()
+// Made destructor to ensure logs are closed cleanly as possible
+int __attribute__((destructor)) close_log()
 {
-    if (!s_log_open) {
+    if (!is_log_open()) {
         return 0;
     }
-    int ret = close(s_fd);
-    if (ret != 0) {
-        return ret;
+    
+    if (0 != fclose(s_fp)) {
+        return -1;
     }
-    s_log_open = false;
     return 0;
 }
 
 
 int write_to_log(const char* log_str, unsigned int len)
 {
-    // TODO: Finish this
+    if (!is_log_open()) {
+        return -1;
+    }
+    if (log_str[len] != '\0') {
+        // TODO: Remove this debug line
+        fputs("OOPS badly terminated string!", s_fp);
+        return -1;
+    }
+    fputs(log_str, s_fp);
     return 0;
 }
